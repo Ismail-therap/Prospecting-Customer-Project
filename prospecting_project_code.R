@@ -121,7 +121,7 @@ ld.vars <- attributes(alias(fit1)$Complete)$dimnames[[1]]
 ld.vars
 
 fit2 <-glm(stagename_cat~primary_medical_funding__c+segment_sub+salesoffice+minimum_of_nbn
-           , family=binomial(link = "logit"),data = TrainData)
+           ,family=binomial(link = "logit"),data = TrainData)
 
 
 ld.vars2 <- attributes(alias(fit2)$Complete)$dimnames[[1]]
