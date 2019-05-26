@@ -5,20 +5,20 @@
 
 library(readr)
 
-dat <- read_csv("C:/Users/Ayota/Desktop/Data/Prospecting Modelv1.csv",na = "NULL")
+dat <- read_csv("C:/Users/Ayota/Desktop/Data/Prospecting Modelv1.csv",na = c("NULL",""))
+View(dat)
+
+dat_2017 <- read_csv("C:/Users/Ayota/Desktop/Data/Historical_TF_File_Qith_NBN_All_Presale_2017_Update.csv",na = c("NULL",""))
+dat_2018 <- read_csv("C:/Users/Ayota/Desktop/Data/Historical_TF_File_Qith_NBN_All_Presale_2018_Update.csv",na = c("NULL",""))
 
 
-dat_2017 <- read_csv("C:/Users/Ayota/Desktop/Data/Historical_TF_File_Qith_NBN_All_Presale_2017_Update.csv")
-dat_2018 <- read_csv("C:/Users/Ayota/Desktop/Data/Historical_TF_File_Qith_NBN_All_Presale_2018_Update.csv")
 
 
+dat_2017 <- transform(dat_2017, minimum_of_nbn = pmin(nbn_aetna,nbn_bcbs,nbn_united))
+dat_17 <- dat_2017[,c("OID","minimum_of_nbn")]
 
-
-dat_2017 <- transform(dat_2017, minimum_value = pmin(nbn_aetna,nbn_bcbs,nbn_united))
-dat_17 <- dat_2017[,c("OID","minimum_value")]
-
-dat_2018 <- transform(dat_2018, minimum_value = pmin(nbn_aetna,nbn_bcbs,nbn_united))
-dat_18 <- dat_2018[,c("OID","minimum_value")]
+dat_2018 <- transform(dat_2018, minimum_of_nbn = pmin(nbn_aetna,nbn_bcbs,nbn_united))
+dat_18 <- dat_2018[,c("OID","minimum_of_nbn")]
 
 
 # merging 17 and 18 file and renaming the ID
@@ -46,10 +46,9 @@ getMode <- function(myvector) {
 
 #### Subsetting the data file with our selected columns:
 
-comb_data <- comb_dat[,c("ID","primary_medical_funding__c","segment_sub","salesoffice","market",
-                         "minimum_value","avg_weighted_tf")]
+comb_data <- comb_dat[,c("ID","stagename","primary_medical_funding__c","segment_sub","salesoffice","market",
+                         "minimum_of_nbn","avg_weighted_tf")]
 
-colnames(comb_data)[6] <- "minimum_of_nbn"
 
 # Missing value percentage by variable:
 missing_value_per <- colMeans(is.na(comb_data))*100
@@ -68,7 +67,7 @@ ggplot(melt(df), aes(value, fill = variable)) + geom_histogram(position = "dodge
 library(data.table)
 comb_data <- data.table(comb_data)
 
-
+comb_data[is.na(stagename), stagename:= getMode(comb_data[,stagename])]
 comb_data[is.na(primary_medical_funding__c), primary_medical_funding__c:= getMode(comb_data[,primary_medical_funding__c])]
 comb_data[is.na(segment_sub), segment_sub:= getMode(comb_data[,segment_sub])]
 comb_data[is.na(salesoffice), salesoffice:= getMode(comb_data[,salesoffice])]
@@ -78,78 +77,67 @@ comb_data[is.na(minimum_of_nbn), minimum_of_nbn:= mean(comb_data[,minimum_of_nbn
 comb_data[is.na(avg_weighted_tf), avg_weighted_tf:= mean(comb_data[,avg_weighted_tf],na.rm = T)]
 
 # making sure there is no missing values:
-colMeans(is.na(comb_data))*100 # if every entry is 0 then we are done!
+colSums(is.na(comb_data)) # if every entry is 0 then we are done!
 
+comb_data <- na.omit(comb_data) # Removing the row which do not have any id
 
 #####################################
 ######Fitting Logistic Regression ###
 #####################################
 
 # Recategorizing the dependent variable:
-str(comb_data)
+comb_data$stagename_cat <- ifelse(comb_data$stagename == "Sold"|comb_data$stagename =="Lost","1","0")
+table(comb_data$stagename_cat)
+
+
+#Convert all charecter variables to factor
+comb_data <- as.data.frame(unclass(comb_data))
+
+## 80% of the sample size
+smp_size <- floor(0.80 * nrow(comb_data))
+
+## set the seed to make your partition reproducible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(comb_data)), size = smp_size)
+
+TrainData <- comb_data[train_ind, ]
+TestData <- comb_data[-train_ind, ]
 
 
 
-my.glm <-glm(Churn~LOCALITY, family=binomial(link = "logit"))
+# Fitting Logistic Regression model:
 
-summary(my.glm)
-names(my.glm)
+attach(comb_data)
+fit1 <-glm(stagename_cat~primary_medical_funding__c+segment_sub+salesoffice+market+minimum_of_nbn
+               ,family=binomial(link = "logit"),data = TrainData)
 
-#################ANOVA  and ODDS RATIO #########################
+summary(fit1)
 
-anova(my.glm,test="F")
-odds.ratio<-exp(my.glm$coefficients)
+# There are aliased/linearly dependent coefficients in the model. So, we should remove them and run the model again.
+ld.vars <- attributes(alias(fit1)$Complete)$dimnames[[1]]
+ld.vars
 
-
-
-
-
-
-
+fit2 <-glm(stagename_cat~primary_medical_funding__c+segment_sub+salesoffice+minimum_of_nbn
+           , family=binomial(link = "logit"),data = TrainData)
 
 
-
-###################################################################################
-
-dat<-read.csv("main_data.csv")
-head(dat)
-attach(dat)
+ld.vars2 <- attributes(alias(fit2)$Complete)$dimnames[[1]]
+ld.vars2
+summary(fit2)
 
 
-GENDERCODE<-as.factor(GENDERCODE)
-STATECODE<-as.factor(STATECODE)
-Churn_stat<-as.factor(Churn_stat)
-summary(dat)
+test_data_in_prediction <- TestData[,c("primary_medical_funding__c","segment_sub","salesoffice","minimum_of_nbn")]
 
+predicted_column <- predict(fit2,newdata=test_data_in_prediction,type="response")
+predicted_value <- ifelse(predicted_column > 0.5,"1","0")
 
-##### Effect of Gender #####
-
-gen.glm<-glm(Churn_stat~GENDERCODE, family=binomial(link = "logit"))
-summary(gen.glm)
-names(gen.glm)
-
-####### Effect of other variables #######
-library(ISLR)
-other.glm<-glm(Churn_stat~STATECODE+income_band_dsc+age_band_dsc, family=binomial(link = "logit"))
-summary(other.glm)
-anova(other.glm)
-
-predicted_probability_of_churn<-predict(other.glm,newdata=dat,type="response")
-Predicted<-round(predicted_probability_of_churn)
-Actual<-dat$Churn_stat
-pred_dat<-cbind(Actual,Predicted)
-#write.csv(pred_dat,"Submission.csv",row.names=FALSE)
-head(pred_dat)
-
-#model_pred_Direction=rep("Not_churn",299)
-#model_pred_Direction[predicted_probability_of_churn>0.5]="Churn"
-
-
+TestData_predicted <-  data.frame(TestData,predicted_value)
+TestData_predicted$predicted_value <- as.factor(TestData_predicted$predicted_value)
 
 
 #### Checking Model Accuracy ###
 require(caret)
-confusionMatrix(Predicted,dat$Churn_stat)
+confusionMatrix(TestData_predicted$predicted_value,TestData_predicted$stagename_cat)
 
 
 
