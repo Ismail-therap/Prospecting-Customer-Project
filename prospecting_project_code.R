@@ -126,6 +126,8 @@ ld.vars2
 summary(fit2)
 
 
+# Prediction:
+
 test_data_in_prediction <- TestData[,c("primary_medical_funding__c","segment_sub","salesoffice","minimum_of_nbn")]
 
 predicted_column <- predict(fit2,newdata=test_data_in_prediction,type="response")
@@ -134,11 +136,32 @@ predicted_value <- ifelse(predicted_column > 0.5,"1","0")
 TestData_predicted <-  data.frame(TestData,predicted_value)
 TestData_predicted$predicted_value <- as.factor(TestData_predicted$predicted_value)
 
-
-#### Checking Model Accuracy ###
-require(caret)
-confusionMatrix(TestData_predicted$predicted_value,TestData_predicted$stagename_cat)
+# Predicted data with ID and predicted column:
+TestData_predicted
 
 
+
+##################
+###### ROC #######
+##################
+
+library(pROC)
+
+# ROC curve for train data:
+roc(TrainData$stagename_cat, as.vector(fitted.values(fit2)), plot=TRUE,grid=TRUE, reuse.auc = TRUE,
+    print.auc = TRUE, ci=TRUE, ci.type="bars", 
+    main = paste("ROC curve using train data","(N = ",nrow(TrainData),")") )
+
+
+# ROC curve for test data:
+
+fit3 <-glm(stagename_cat~primary_medical_funding__c+segment_sub+salesoffice+minimum_of_nbn
+           , family=binomial(link = "logit"),data = TestData)
+
+roc(TestData$stagename_cat, as.vector(fitted.values(fit3)), plot=TRUE,grid=TRUE, reuse.auc = TRUE,
+    print.auc = TRUE, ci=TRUE, ci.type="bars", 
+    main = paste("ROC curve using test data","(N = ",nrow(TestData),")"))
+
+# So, we found similar types of ROC curve for both test and train data.
 
 
