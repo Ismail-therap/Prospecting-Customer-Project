@@ -81,6 +81,9 @@ colSums(is.na(comb_data)) # if every entry is 0 then we are done!
 
 comb_data <- na.omit(comb_data) # Removing the row which do not have any id
 
+rmdtq_data <- subset(comb_data, stagename!="DTQ")
+
+
 #####################################
 ######Fitting Logistic Regression ###
 #####################################
@@ -164,4 +167,89 @@ roc(TestData$stagename_cat, as.vector(fitted.values(fit3)), plot=TRUE,grid=TRUE,
 
 # So, we found similar types of ROC curve for both test and train data.
 
+######################################################################
+######Fitting Logistic Regression after removing DTQ from the data ###
+######################################################################
+
+
+comb_data <- rmdtq_data
+
+# Recategorizing the dependent variable:
+comb_data$stagename_cat <- ifelse(comb_data$stagename == "Sold"|comb_data$stagename =="Lost","1","0")
+table(comb_data$stagename_cat)
+
+
+#Convert all charecter variables to factor
+comb_data <- as.data.frame(unclass(comb_data))
+
+## 80% of the sample size
+smp_size <- floor(0.80 * nrow(comb_data))
+
+## set the seed to make your partition reproducible
+set.seed(1234)
+train_ind <- sample(seq_len(nrow(comb_data)), size = smp_size)
+
+TrainData <- comb_data[train_ind, ]
+TestData <- comb_data[-train_ind, ]
+
+
+
+# Fitting Logistic Regression model:
+
+attach(comb_data)
+fit1 <-glm(stagename_cat~primary_medical_funding__c+segment_sub+salesoffice+market+minimum_of_nbn
+           ,family=binomial(link = "logit"),data = TrainData)
+
+summary(fit1)
+
+# There are aliased/linearly dependent coefficients in the model. So, we should remove them and run the model again.
+ld.vars <- attributes(alias(fit1)$Complete)$dimnames[[1]]
+ld.vars
+
+fit2 <-glm(stagename_cat~primary_medical_funding__c+segment_sub+salesoffice+minimum_of_nbn
+           , family=binomial(link = "logit"),data = TrainData)
+
+
+ld.vars2 <- attributes(alias(fit2)$Complete)$dimnames[[1]]
+ld.vars2
+summary(fit2)
+
+
+# Prediction:
+
+test_data_in_prediction <- TestData[,c("primary_medical_funding__c","segment_sub","salesoffice","minimum_of_nbn")]
+
+predicted_column <- predict(fit2,newdata=test_data_in_prediction,type="response")
+predicted_value <- ifelse(predicted_column > 0.5,"1","0")
+
+TestData_predicted <-  data.frame(TestData,predicted_value)
+TestData_predicted$predicted_value <- as.factor(TestData_predicted$predicted_value)
+
+# Predicted data with ID and predicted column:
+dim(TestData_predicted)
+
+
+
+##################
+###### ROC #######
+##################
+
+library(pROC)
+
+# ROC curve for train data:
+roc(TrainData$stagename_cat, as.vector(fitted.values(fit2)), plot=TRUE,grid=TRUE, reuse.auc = TRUE,
+    print.auc = TRUE, ci=TRUE, ci.type="bars", 
+    main = paste("ROC curve using train data","(N = ",nrow(TrainData),")") )
+
+
+# ROC curve for test data:
+
+fit3 <-glm(stagename_cat~primary_medical_funding__c+segment_sub+salesoffice+minimum_of_nbn
+           , family=binomial(link = "logit"),data = TestData)
+
+roc(TestData$stagename_cat, as.vector(fitted.values(fit3)), plot=TRUE,grid=TRUE, reuse.auc = TRUE,
+    print.auc = TRUE, ci=TRUE, ci.type="bars", 
+    main = paste("ROC curve using test data","(N = ",nrow(TestData),")"))
+
+# So, we found similar types of ROC curve for both test and train data after removing the dtq values from the data as well.
 
