@@ -38,7 +38,7 @@ Plotting_function_other <- function(df,xlabel="x",scale=150,ang=45){
   
   library(ggplot2)
   ggplot(df)  + 
-    geom_line(aes(x=df[,1], y = prospecting_rate,group = 1,linetype = ""),stat="identity",size=1,colour="red")+
+    geom_line(aes(x=reorder(df[,1],-Freq), y = prospecting_rate,group = 1,linetype = ""),stat="identity",size=1,colour="red")+
     scale_y_continuous(name = expression("Prospecting Rate(%)"), 
                        sec.axis = sec_axis(~.*scale,name = "Case Volumn"),limits = c(0,100))+
     geom_bar(aes(x=df[,1], y=Freq/scale),stat="identity", fill="grey")+
@@ -56,8 +56,8 @@ Plotting_function_month <- function(df,xlabel="x"){
   ggplot(df)  + 
     geom_line(aes(x=df[,1], y=prospecting_rate,group = 1,linetype = ""),stat="identity",size=1,colour="red")+
     scale_y_continuous(name = expression("Prospecting Rate(%)"), 
-                       sec.axis = sec_axis(~.*150,name = "Case Volumn"))+
-    geom_bar(aes(x=df[,1], y=Freq/200),stat="identity", fill="grey")+
+                       sec.axis = sec_axis(~.*300,name = "Case Volumn"))+
+    geom_bar(aes(x=df[,1], y=Freq/300),stat="identity", fill="grey")+
     theme(axis.text.x=element_text(angle= 45, vjust=.5))+
     labs(x=xlabel,y="",linetype = "Prospecting Rate")+
     scale_x_discrete(limits = month.abb)+
@@ -132,6 +132,7 @@ Plotting_function_other(df,xlabel="salesoffice",scale=100,ang=90)
 #### market
 count_percentage(var="market") 
 df <- cost_volumn_and_prospecting_rate(var="market")
+df <- df[order(-df$Freq),] 
 Plotting_function_other(df,xlabel="market",scale=100,ang=90)
 
 
@@ -146,8 +147,8 @@ df5 <- cost_volumn_and_prospecting_rate(var="segment_sub")
 ggplot(df5)  + 
   geom_line(aes(x=df5[,1], y=prospecting_rate,group = 1,linetype = ""),stat="identity",size=1,colour="red")+
   scale_y_continuous(name = expression("Prospecting Rate(%)"), 
-                     sec.axis = sec_axis(~.*100,name = "Case Volumn"))+
-  geom_bar(aes(x=df5[,1], y=Freq/100),stat="identity", fill="grey")+
+                     sec.axis = sec_axis(~.*500,name = "Case Volumn"))+
+  geom_bar(aes(x=df5[,1], y=Freq/500),stat="identity", fill="grey")+
   theme(axis.text.x=element_text(angle= 45, vjust=.5))+
   labs(x="Segment",y="",linetype = "Prospecting Rate")+
   scale_x_discrete(limits = c("2-99","100-249","250-500","O500"))+
@@ -172,6 +173,7 @@ dat$Year_month <- zoo::as.yearmon(paste(dat$close_year, dat$close_month), "%Y %b
 count_percentage(var="Year_month") 
 df3 <- cost_volumn_and_prospecting_rate(var="Year_month")
 Plotting_function_other(df=df3,xlabel="Year Month",scale=200,ang = 90)
+
 
 
 
