@@ -6,7 +6,6 @@
 library(readr)
 
 dat <- read_csv("C:/Users/Ayota/Desktop/Data/Prospecting Modelv1.csv",na = c("NULL",""))
-View(dat)
 
 dat_2017 <- read_csv("C:/Users/Ayota/Desktop/Data/Historical_TF_File_Qith_NBN_All_Presale_2017_Update.csv",na = c("NULL",""))
 dat_2018 <- read_csv("C:/Users/Ayota/Desktop/Data/Historical_TF_File_Qith_NBN_All_Presale_2018_Update.csv",na = c("NULL",""))
@@ -89,9 +88,39 @@ rmdtq_data <- subset(comb_data, stagename!="DTQ")
 #####################################
 
 # Recategorizing the dependent variable:
-comb_data$stagename_cat <- ifelse(comb_data$stagename == "Sold"|comb_data$stagename =="Lost","1","0")
-table(comb_data$stagename_cat)
+comb_data$stagename_cat <- ifelse(comb_data$stagename == "Sold"|comb_data$stagename =="Verbal Commitment","1","0")
 
+#### Data proportion
+
+
+#####
+library("ggplot2")  # Data visualization
+library("dplyr")    # Data manipulation
+
+count.data <- data.frame(table(comb_data$stagename_cat))
+count.data$prop = round(count.data$Freq/ sum(count.data$Freq),2)
+
+colnames(count.data) <- c("Class","n","prop")
+
+count.data <- count.data %>%
+  arrange(desc(Class)) %>%
+  mutate(lab.ypos = cumsum(prop) - 0.5*prop)
+
+mycols <- c("#0073C2FF","#CD534CFF")
+
+ggplot(count.data, aes(x = 2, y = prop, fill = Class)) +
+  geom_bar(stat = "identity", color = "white") +
+  coord_polar(theta = "y", start = 0)+
+  geom_text(aes(y = lab.ypos, label = prop), color = "white")+
+  scale_fill_manual(values = mycols) +
+  theme_void()+
+  xlim(0.5, 2.5)
+
+#####################
+
+
+
+ 
 
 #Convert all charecter variables to factor
 comb_data <- as.data.frame(unclass(comb_data))
@@ -99,12 +128,27 @@ comb_data <- as.data.frame(unclass(comb_data))
 ## 80% of the sample size
 smp_size <- floor(0.80 * nrow(comb_data))
 
+in_0_class <- round(count.data[count.data$Class=="0",3]*smp_size,0)
+in_1_class <- smp_size-in_0_class
+
+
+
 ## set the seed to make your partition reproducible
 set.seed(123)
-train_ind <- sample(seq_len(nrow(comb_data)), size = smp_size)
 
-TrainData <- comb_data[train_ind, ]
+train_ind_0_class <- sample(seq_len(nrow(comb_data[comb_data$stagename_cat == "0",])), size = in_0_class)
+train_ind_1_class <- sample(seq_len(nrow(comb_data[comb_data$stagename_cat == "1",])), size = in_1_class)
+
+
+TrainData_0 <- comb_data[train_ind_0_class, ]
+TrainData_1 <- comb_data[train_ind_1_class, ]
+
+TrainData <- rbind(TrainData_0,TrainData_1)
+
+train_ind <- c(train_ind_1_class,train_ind_0_class)
+
 TestData <- comb_data[-train_ind, ]
+
 
 
 
@@ -175,8 +219,38 @@ roc(TestData$stagename_cat, as.vector(fitted.values(fit3)), plot=TRUE,grid=TRUE,
 comb_data <- rmdtq_data
 
 # Recategorizing the dependent variable:
-comb_data$stagename_cat <- ifelse(comb_data$stagename == "Sold"|comb_data$stagename =="Lost","1","0")
-table(comb_data$stagename_cat)
+comb_data$stagename_cat <- ifelse(comb_data$stagename == "Sold"|comb_data$stagename =="Verbal Commitment","1","0")
+
+#### Data proportion
+
+
+#####
+library("ggplot2")  # Data visualization
+library("dplyr")    # Data manipulation
+
+count.data <- data.frame(table(comb_data$stagename_cat))
+count.data$prop = round(count.data$Freq/ sum(count.data$Freq),2)
+
+colnames(count.data) <- c("Class","n","prop")
+
+count.data <- count.data %>%
+  arrange(desc(Class)) %>%
+  mutate(lab.ypos = cumsum(prop) - 0.5*prop)
+
+mycols <- c("#0073C2FF","#CD534CFF")
+
+ggplot(count.data, aes(x = 2, y = prop, fill = Class)) +
+  geom_bar(stat = "identity", color = "white") +
+  coord_polar(theta = "y", start = 0)+
+  geom_text(aes(y = lab.ypos, label = prop), color = "white")+
+  scale_fill_manual(values = mycols) +
+  theme_void()+
+  xlim(0.5, 2.5)
+
+#####################
+
+
+
 
 
 #Convert all charecter variables to factor
@@ -185,11 +259,25 @@ comb_data <- as.data.frame(unclass(comb_data))
 ## 80% of the sample size
 smp_size <- floor(0.80 * nrow(comb_data))
 
-## set the seed to make your partition reproducible
-set.seed(1234)
-train_ind <- sample(seq_len(nrow(comb_data)), size = smp_size)
+in_0_class <- round(count.data[count.data$Class=="0",3]*smp_size,0)
+in_1_class <- smp_size-in_0_class
 
-TrainData <- comb_data[train_ind, ]
+
+
+## set the seed to make your partition reproducible
+set.seed(123)
+
+train_ind_0_class <- sample(seq_len(nrow(comb_data[comb_data$stagename_cat == "0",])), size = in_0_class)
+train_ind_1_class <- sample(seq_len(nrow(comb_data[comb_data$stagename_cat == "1",])), size = in_1_class)
+
+
+TrainData_0 <- comb_data[train_ind_0_class, ]
+TrainData_1 <- comb_data[train_ind_1_class, ]
+
+TrainData <- rbind(TrainData_0,TrainData_1)
+
+train_ind <- c(train_ind_1_class,train_ind_0_class)
+
 TestData <- comb_data[-train_ind, ]
 
 

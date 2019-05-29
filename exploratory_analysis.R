@@ -65,6 +65,21 @@ Plotting_function_month <- function(df,xlabel="x"){
   
 }
 
+###
+
+
+Plotting_function_year_month <- function(df,xlabel="x",scale=150,ang=45){
+  
+  library(ggplot2)
+  ggplot(df)  + 
+    geom_line(aes(x=df[,1], y = prospecting_rate,group = 1,linetype = ""),stat="identity",size=1,colour="red")+
+    scale_y_continuous(name = expression("Prospecting Rate(%)"), 
+                       sec.axis = sec_axis(~.*scale,name = "Case Volumn"),limits = c(0,100))+
+    geom_bar(aes(x=df[,1], y=Freq/scale),stat="identity", fill="grey")+
+    theme(axis.text.x=element_text(angle= ang, vjust=.5))+
+    labs(x=xlabel,y="",linetype = "Prospecting Rate")+
+    geom_line(aes(x=df[,1], y=prospecting_rate,group = 1,linetype = ""),stat="identity",size=1,colour="red")
+}
 
 
 ###########################################
@@ -172,8 +187,13 @@ dat$Year_month <- zoo::as.yearmon(paste(dat$close_year, dat$close_month), "%Y %b
 
 count_percentage(var="Year_month") 
 df3 <- cost_volumn_and_prospecting_rate(var="Year_month")
-Plotting_function_other(df=df3,xlabel="Year Month",scale=200,ang = 90)
+Plotting_function_year_month(df=df3,xlabel="Year Month",scale=200,ang = 90)
 
+# For 2017
+Plotting_function_year_month(df=df3[1:12,],xlabel="Year Month",scale=200,ang = 90)
+
+# For 2018
+Plotting_function_year_month(df=df3[13:24,],xlabel="Year Month",scale=200,ang = 90)
 
 
 
