@@ -281,7 +281,8 @@ train_ind <- c(train_ind_1_class,train_ind_0_class)
 TestData <- comb_data[-train_ind, ]
 
 
-
+table(TestData$stagename_cat)
+table(TrainData$stagename_cat)
 # Fitting Logistic Regression model:
 
 attach(comb_data)
@@ -316,7 +317,9 @@ TestData_predicted$predicted_value <- as.factor(TestData_predicted$predicted_val
 # Predicted data with ID and predicted column:
 dim(TestData_predicted)
 
+head(TestData_predicted)
 
+write.csv(TestData_predicted,"TestData_predicted.csv")
 
 ##################
 ###### ROC #######

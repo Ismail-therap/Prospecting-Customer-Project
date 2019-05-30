@@ -92,7 +92,6 @@ Plotting_function_year_month <- function(df,xlabel="x",scale=150,ang=45){
 library(readr)
 
 dat <- read_csv("C:/Users/Ayota/Desktop/Data/Prospecting Modelv1.csv",na = c("NULL",""))
-View(dat)
 
 dat_2017 <- read_csv("C:/Users/Ayota/Desktop/Data/Historical_TF_File_Qith_NBN_All_Presale_2017_Update.csv",na = c("NULL",""))
 dat_2018 <- read_csv("C:/Users/Ayota/Desktop/Data/Historical_TF_File_Qith_NBN_All_Presale_2018_Update.csv",na = c("NULL",""))
@@ -115,9 +114,22 @@ colnames(comb_17_and_18)[1] <- "ID"
 
 comb_dat <- merge(x = dat, y = comb_17_and_18, by = "ID", all.x = TRUE)
 
+####### For avg_weighted_tf
+
+comb_dat$avg_weighted_tf_cat <- ifelse(comb_dat$avg_weighted_tf < 1, "< 1",
+                                       ifelse(comb_dat$avg_weighted_tf >= 1 & comb_dat$avg_weighted_tf < 1.1, "1 to 1.1",
+                                              ifelse(comb_dat$avg_weighted_tf >= 1.1 & comb_dat$avg_weighted_tf < 1.2, "1.1 to 1.2","> 1.2")))
+
+
+
+
+comb_dat$minimum_of_nbn_cat <- ifelse(comb_dat$minimum_of_nbn < 0.9, "< 0.9",
+                                  ifelse(comb_dat$minimum_of_nbn >= 0.9 & comb_dat$minimum_of_nbn < 1,"0.9 to 1",
+                                         ifelse(comb_dat$minimum_of_nbn >= 1 & comb_dat$minimum_of_nbn < 1.1,"1 to 1.1","> 1.1")))
+
 
 comb_data <- comb_dat[,c("ID","stagename","primary_medical_funding__c","segment_sub","salesoffice","market",
-                         "minimum_of_nbn","avg_weighted_tf","close_year","close_month")]
+                         "minimum_of_nbn","avg_weighted_tf","close_year","close_month","avg_weighted_tf_cat","minimum_of_nbn_cat")]
 
 comb_data$stagename_cat <- ifelse(comb_data$stagename == "Sold"|comb_data$stagename =="Lost","1","0")
 
@@ -199,10 +211,22 @@ Plotting_function_year_month(df=df3[13:24,],xlabel="Year Month",scale=200,ang = 
 
 
 
+####### For avg_weighted_tf
+
+
+count_percentage(var="avg_weighted_tf_cat") 
+df5 <- cost_volumn_and_prospecting_rate(var="avg_weighted_tf_cat")
+Plotting_function_other(df=df5,xlabel="avg_weighted_tf_cat",scale=650,ang=0)
 
 
 
 
+####### For minimum_of_nbn_cat
+
+
+count_percentage(var="minimum_of_nbn_cat") 
+df6 <- cost_volumn_and_prospecting_rate(var="minimum_of_nbn_cat")
+Plotting_function_other(df=df6,xlabel="minimum_of_nbn_cat",scale=700,ang=0)
 
 
 
