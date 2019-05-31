@@ -220,7 +220,6 @@ Plotting_function_other(df=df5,xlabel="avg_weighted_tf_cat",scale=650,ang=0)
 
 
 
-
 ####### For minimum_of_nbn_cat
 
 
@@ -228,5 +227,26 @@ count_percentage(var="minimum_of_nbn_cat")
 df6 <- cost_volumn_and_prospecting_rate(var="minimum_of_nbn_cat")
 Plotting_function_other(df=df6,xlabel="minimum_of_nbn_cat",scale=700,ang=0)
 
+
+### For 2017
+
+dat <- comb_data[comb_data$close_year=="2017",]
+df7 <- cost_volumn_and_prospecting_rate(var="avg_weighted_tf_cat")
+Plotting_function_other(df=df7,xlabel="avg_weighted_tf_cat",scale=400,ang=0)
+
+
+df8 <- cost_volumn_and_prospecting_rate(var="minimum_of_nbn_cat")
+Plotting_function_other(df=df8,xlabel="minimum_of_nbn_cat",scale=400,ang=0)
+
+
+### For 2018
+
+dat <- comb_data[comb_data$close_year=="2018",]
+df9 <- cost_volumn_and_prospecting_rate(var="avg_weighted_tf_cat")
+Plotting_function_other(df=df9,xlabel="avg_weighted_tf_cat",scale=400,ang=0)
+
+
+df10 <- cost_volumn_and_prospecting_rate(var="minimum_of_nbn_cat")
+Plotting_function_other(df=df10,xlabel="minimum_of_nbn_cat",scale=400,ang=0)
 
 
